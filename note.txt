@@ -1,0 +1,1 @@
+./bin/llama-cli -m ../models/llama-2-7b.Q4_K_M.gguf -p "Quel est l'objectif du développement durable ?"
