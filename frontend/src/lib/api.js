@@ -6,7 +6,7 @@
 import axios from 'axios';
 
 // const API_BASE_URL = 'https://8000-ip0z7m5i0g6fdklzgg6jk-6b0cb216.manus.computer/api';
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://rinoatohoun.pythonanywhere.com/api';
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
