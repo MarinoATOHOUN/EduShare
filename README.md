@@ -175,13 +175,43 @@ npm run build
 
 ## Déploiement
 
-### Backend
+### Avec Docker (Recommandé)
+
+1. **Cloner le projet et configurer l'environnement**
+```bash
+cp .env.example .env
+# Modifier les variables dans .env si nécessaire
+```
+
+2. **Construire et démarrer les conteneurs**
+```bash
+docker compose up -d --build
+```
+
+3. **Accéder à l'application**
+- Frontend: http://localhost
+- Backend API: http://localhost:8000/api/
+- Admin Django: http://localhost:8000/admin/
+
+4. **Créer un superutilisateur (optionnel)**
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
+
+5. **Arrêter les conteneurs**
+```bash
+docker compose down
+```
+
+### Sans Docker
+
+#### Backend
 1. Configurer les variables d'environnement
 2. Utiliser une base de données PostgreSQL en production
 3. Configurer les fichiers statiques avec `collectstatic`
 4. Utiliser un serveur WSGI (Gunicorn + Nginx)
 
-### Frontend
+#### Frontend
 1. Mettre à jour l'URL de l'API dans `src/lib/api.js`
 2. Créer le build de production avec `npm run build`
 3. Servir les fichiers statiques depuis le dossier `dist/`

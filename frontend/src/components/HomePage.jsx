@@ -30,7 +30,7 @@ const HomePage = () => {
         documentsAPI.getAll({ limit: 6 }),
         coursesAPI.getAll()
       ]);
-      
+
       setStats(statsData);
       setRecentDocuments(documentsData.slice(0, 6));
       setCourses(coursesData.slice(0, 8));
@@ -64,11 +64,11 @@ const HomePage = () => {
             <span className="text-primary"> cours PDF</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            EduShare est une plateforme gratuite de partage de documents PDF éducatifs. 
+            EduShare est une plateforme gratuite de partage de documents PDF éducatifs créée par <strong>BlackBenAI</strong>.
             Partagez vos cours et accédez à une bibliothèque de ressources pédagogiques.
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" asChild>
             <Link to="/documents" className="flex items-center space-x-2">
@@ -132,7 +132,7 @@ const HomePage = () => {
             Une plateforme simple et efficace pour partager et accéder à des ressources éducatives
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
@@ -143,7 +143,7 @@ const HomePage = () => {
               </CardDescription>
             </CardHeader>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <Search className="h-8 w-8 text-primary mb-2" />
@@ -153,7 +153,7 @@ const HomePage = () => {
               </CardDescription>
             </CardHeader>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <FileText className="h-8 w-8 text-primary mb-2" />
@@ -178,7 +178,7 @@ const HomePage = () => {
               </Link>
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentDocuments.map((doc) => (
               <Card key={doc.id} className="hover:shadow-lg transition-shadow">
@@ -204,7 +204,7 @@ const HomePage = () => {
                       Par {doc.uploaded_by_username}
                     </span>
                     <Button size="sm" asChild>
-                      <Link to={`/documents/${doc.id}`}>Voir</Link>
+                      <Link to={`/documents/${doc.encrypted_id}`}>Voir</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -223,7 +223,7 @@ const HomePage = () => {
               Explorez nos différentes catégories de cours
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {courses.map((course) => (
               <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer">

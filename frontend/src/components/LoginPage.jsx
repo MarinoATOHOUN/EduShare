@@ -136,7 +136,26 @@ const LoginPage = () => {
           </CardContent>
         </Card>
 
-        
+        {/* Demo Accounts */}
+        <Card className="bg-muted/50">
+          <CardHeader>
+            <CardTitle className="text-lg">Bienvenu sur EduShare</CardTitle>
+            <CardDescription>
+              La plateforme de partage de documents éducatif pour tous 
+            </CardDescription>
+          </CardHeader>
+          {/* <CardContent className="space-y-2">
+            <div className="text-sm">
+              <strong>Utilisateur :</strong> marie_dupont / password123
+            </div>
+            <div className="text-sm">
+              <strong>Utilisateur :</strong> jean_martin / password123
+            </div>
+            <div className="text-sm">
+              <strong>Admin :</strong> admin / admin123
+            </div>
+          </CardContent> */}
+        </Card>
       </div>
     </div>
   );

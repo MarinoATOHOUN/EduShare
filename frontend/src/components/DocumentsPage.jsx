@@ -129,14 +129,14 @@ const DocumentsPage = () => {
           </div>
           <div className="flex items-center space-x-2">
             <Button size="sm" asChild className="flex-1">
-              <Link to={`/documents/${document.id}`} className="flex items-center justify-center">
+              <Link to={`/documents/${document.encrypted_id}`} className="flex items-center justify-center">
                 <Eye className="h-4 w-4 mr-1" />
                 Voir
               </Link>
             </Button>
             <Button size="sm" variant="outline" asChild>
               <a 
-                href={documentsAPI.download(document.id)} 
+                href={documentsAPI.download(document.encrypted_id)} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center"

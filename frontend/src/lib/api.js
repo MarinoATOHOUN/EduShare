@@ -5,8 +5,8 @@
 
 import axios from 'axios';
 
-// const API_BASE_URL = 'https://8000-ip0z7m5i0g6fdklzgg6jk-6b0cb216.manus.computer/api';
-const API_BASE_URL = 'https://rinoatohoun.pythonanywhere.com/api';
+// Use environment variable or default to relative path for production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -44,10 +44,10 @@ api.interceptors.response.use(
           const response = await axios.post(`${API_BASE_URL}/auth/refresh/`, {
             refresh: refreshToken,
           });
-          
+
           const { access } = response.data;
           localStorage.setItem('access_token', access);
-          
+
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
@@ -140,7 +140,7 @@ export const documentsAPI = {
     Object.keys(documentData).forEach(key => {
       formData.append(key, documentData[key]);
     });
-    
+
     const response = await api.post('/documents/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

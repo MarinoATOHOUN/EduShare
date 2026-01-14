@@ -7,6 +7,7 @@ Developed by Marino ATOHOUN
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Course, PDFDocument, UserProfile
+from .utils import encrypt_id
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -66,14 +67,19 @@ class PDFDocumentSerializer(serializers.ModelSerializer):
     course_id = serializers.IntegerField(write_only=True)
     file_size_mb = serializers.ReadOnlyField()
 
+    encrypted_id = serializers.SerializerMethodField()
+
     class Meta:
         model = PDFDocument
         fields = [
-            'id', 'title', 'description', 'course', 'course_id', 'uploaded_by',
+            'id', 'encrypted_id', 'title', 'description', 'course', 'course_id', 'uploaded_by',
             'pdf_file', 'file_size', 'file_size_mb', 'download_count',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'uploaded_by', 'file_size', 'download_count', 'created_at', 'updated_at', 'is_active']
+        read_only_fields = ['id', 'encrypted_id', 'uploaded_by', 'file_size', 'download_count', 'created_at', 'updated_at', 'is_active']
+
+    def get_encrypted_id(self, obj):
+        return encrypt_id(obj.id)
 
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user
@@ -87,10 +93,15 @@ class PDFDocumentListSerializer(serializers.ModelSerializer):
     course_domain = serializers.CharField(source='course.domain', read_only=True)
     file_size_mb = serializers.ReadOnlyField()
 
+    encrypted_id = serializers.SerializerMethodField()
+
     class Meta:
         model = PDFDocument
         fields = [
-            'id', 'title', 'description', 'course_name', 'course_domain',
+            'id', 'encrypted_id', 'title', 'description', 'course_name', 'course_domain',
             'uploaded_by_username', 'file_size_mb', 'download_count', 'created_at'
         ]
+
+    def get_encrypted_id(self, obj):
+        return encrypt_id(obj.id)
 

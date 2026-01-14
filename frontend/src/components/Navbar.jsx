@@ -5,17 +5,19 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { BookOpen, User, LogOut, Upload, FileText } from 'lucide-react';
+import { BookOpen, User, LogOut, Upload, FileText, Sun, Moon } from 'lucide-react';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -35,15 +37,15 @@ const Navbar = () => {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link 
-              to="/documents" 
+            <Link
+              to="/documents"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Parcourir les cours
             </Link>
             {isAuthenticated && (
-              <Link 
-                to="/upload" 
+              <Link
+                to="/upload"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 Partager un cours
@@ -53,6 +55,20 @@ const Navbar = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="rounded-full"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5 transition-all" />
+              ) : (
+                <Moon className="h-5 w-5 transition-all" />
+              )}
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -82,7 +98,7 @@ const Navbar = () => {
                       <span>Mes documents</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     className="flex items-center space-x-2 text-destructive"
                   >

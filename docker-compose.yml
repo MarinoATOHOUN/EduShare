@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: .
+    volumes:
+      - ./media:/app/media
+      - ./db_data:/app/db_data
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-your-secret-key-here
+      - DATABASE_URL=sqlite:////app/db_data/db.sqlite3
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  media:
+  db_data:

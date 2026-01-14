@@ -11,24 +11,26 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Download, 
-  Eye, 
-  Calendar, 
-  User, 
-  FileText, 
-  ArrowLeft, 
+import {
+  Download,
+  Eye,
+  Calendar,
+  User,
+  FileText,
+  ArrowLeft,
   Share2,
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
 import { documentsAPI } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/use-toast';
 
 const DocumentDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,7 +61,7 @@ const DocumentDetailPage = () => {
     try {
       // Open download link in new tab
       window.open(documentsAPI.download(id), '_blank');
-      
+
       // Update download count locally
       setDocument(prev => ({
         ...prev,
@@ -77,20 +79,28 @@ const DocumentDetailPage = () => {
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Lien copié !",
+        description: "Le lien du document a été copié dans votre presse-papier.",
+      });
+
+      // Also try native share if available
+      if (navigator.share) {
         await navigator.share({
           title: document.title,
           text: document.description,
           url: window.location.href,
         });
-      } catch (error) {
-        console.log('Error sharing:', error);
       }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      // You could show a toast here
+    } catch (error) {
+      console.log('Error sharing:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -111,7 +121,7 @@ const DocumentDetailPage = () => {
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-8 w-32" />
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <Card>
@@ -122,7 +132,7 @@ const DocumentDetailPage = () => {
               </CardHeader>
             </Card>
           </div>
-          
+
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -182,7 +192,7 @@ const DocumentDetailPage = () => {
                   </CardDescription>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4 flex-wrap gap-2">
                 <Badge variant="secondary" className="text-sm">
                   {document.course?.name}
@@ -233,27 +243,27 @@ const DocumentDetailPage = () => {
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                onClick={handleDownload} 
+              <Button
+                onClick={handleDownload}
                 disabled={downloading}
                 className="w-full"
               >
                 <Download className="h-4 w-4 mr-2" />
                 {downloading ? 'Téléchargement...' : 'Télécharger'}
               </Button>
-              
-              <Button 
-                onClick={handlePreview} 
-                variant="outline" 
+
+              <Button
+                onClick={handlePreview}
+                variant="outline"
                 className="w-full"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Prévisualiser
               </Button>
-              
-              <Button 
-                onClick={handleShare} 
-                variant="outline" 
+
+              <Button
+                onClick={handleShare}
+                variant="outline"
                 className="w-full"
               >
                 <Share2 className="h-4 w-4 mr-2" />

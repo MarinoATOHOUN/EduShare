@@ -15,13 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  User, 
-  FileText, 
-  Download, 
-  Calendar, 
-  Edit, 
-  Save, 
+import {
+  User,
+  FileText,
+  Download,
+  Calendar,
+  Edit,
+  Save,
   X,
   CheckCircle,
   AlertCircle
@@ -35,7 +35,7 @@ const ProfilePage = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  
+
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -81,7 +81,7 @@ const ProfilePage = () => {
 
     try {
       const result = await updateProfile(profileData);
-      
+
       if (result.success) {
         setMessage({ type: 'success', text: 'Profil mis à jour avec succès' });
         setEditing(false);
@@ -303,7 +303,7 @@ const ProfilePage = () => {
                         </span>
                       </div>
                       <Button size="sm" asChild className="w-full">
-                        <Link to={`/documents/${document.id}`}>Voir le document</Link>
+                        <Link to={`/documents/${document.encrypted_id}`}>Voir le document</Link>
                       </Button>
                     </div>
                   </CardContent>

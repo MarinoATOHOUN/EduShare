@@ -10,9 +10,10 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, FileResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.views.decorators.clickjacking import xframe_options_exempt
 import os
 
 from .models import Course, PDFDocument, UserProfile
@@ -20,6 +21,7 @@ from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserProfileSerializer,
     CourseSerializer, PDFDocumentSerializer, PDFDocumentListSerializer
 )
+from .utils import decrypt_id
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -93,6 +95,16 @@ class PDFDocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PDFDocumentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        # Try to decrypt if it's not a digit
+        if not str(pk).isdigit():
+            decoded_id = decrypt_id(pk)
+            if decoded_id:
+                pk = decoded_id
+        
+        return get_object_or_404(PDFDocument, id=pk, is_active=True)
+
     def get_permissions(self):
         """Only the uploader can update/delete their documents"""
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
@@ -118,6 +130,12 @@ class PDFDocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
 def download_pdf(request, document_id):
     """Download PDF file"""
     try:
+        # Decrypt ID if it's not a digit
+        if not str(document_id).isdigit():
+            decoded_id = decrypt_id(document_id)
+            if decoded_id:
+                document_id = decoded_id
+                
         document = get_object_or_404(PDFDocument, id=document_id, is_active=True)
         
         # Increment download count
@@ -135,19 +153,25 @@ def download_pdf(request, document_id):
         raise Http404("Document non trouvé")
 
 
-@api_view(['GET'])
+@api_view(['GET', 'HEAD'])
 @permission_classes([permissions.AllowAny])
+@xframe_options_exempt
 def preview_pdf(request, document_id):
     """Preview PDF file in browser"""
     try:
+        # Decrypt ID if it's not a digit
+        if not str(document_id).isdigit():
+            decoded_id = decrypt_id(document_id)
+            if decoded_id:
+                document_id = decoded_id
+                
         document = get_object_or_404(PDFDocument, id=document_id, is_active=True)
         
         # Serve the file for preview
         if os.path.exists(document.pdf_file.path):
-            with open(document.pdf_file.path, 'rb') as pdf_file:
-                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                response['Content-Disposition'] = f'inline; filename="{document.title}.pdf"'
-                return response
+            response = FileResponse(open(document.pdf_file.path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{document.title}.pdf"'
+            return response
         else:
             raise Http404("Fichier non trouvé")
     except PDFDocument.DoesNotExist:

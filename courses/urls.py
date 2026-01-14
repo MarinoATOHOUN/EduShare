@@ -28,9 +28,9 @@ urlpatterns = [
     
     # PDF Documents
     path('documents/', views.PDFDocumentListCreateView.as_view(), name='document_list_create'),
-    path('documents/<int:pk>/', views.PDFDocumentDetailView.as_view(), name='document_detail'),
-    path('documents/<int:document_id>/download/', views.download_pdf, name='download_pdf'),
-    path('documents/<int:document_id>/preview/', views.preview_pdf, name='preview_pdf'),
+    path('documents/<str:pk>/', views.PDFDocumentDetailView.as_view(), name='document_detail'),
+    path('documents/<str:document_id>/download/', views.download_pdf, name='download_pdf'),
+    path('documents/<str:document_id>/preview/', views.preview_pdf, name='preview_pdf'),
     
     # Statistics
     path('stats/', views.stats, name='stats'),

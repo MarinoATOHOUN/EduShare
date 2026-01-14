@@ -148,13 +148,13 @@ const UploadPage = () => {
       }, 200);
 
       const result = await documentsAPI.create(formData);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
       setSuccess(true);
 
       setTimeout(() => {
-        navigate(`/documents/${result.id}`);
+        navigate(`/documents/${result.encrypted_id}`);
       }, 2000);
 
     } catch (error) {
@@ -242,8 +242,8 @@ const UploadPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="course_id">Domaine de cours *</Label>
-              <Select 
-                value={formData.course_id} 
+              <Select
+                value={formData.course_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, course_id: value }))}
                 disabled={loading}
               >
@@ -263,11 +263,10 @@ const UploadPage = () => {
             <div className="space-y-2">
               <Label>Fichier PDF *</Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-primary bg-primary/5' 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive
+                    ? 'border-primary bg-primary/5'
                     : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                } ${loading ? 'opacity-50 pointer-events-none' : ''}`}
+                  } ${loading ? 'opacity-50 pointer-events-none' : ''}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -331,9 +330,9 @@ const UploadPage = () => {
                   </>
                 )}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => navigate('/documents')}
                 disabled={loading}
               >
