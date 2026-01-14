@@ -5,7 +5,7 @@ Developed by Marino ATOHOUN
 """
 
 from django.contrib import admin
-from .models import Course, PDFDocument, UserProfile
+from .models import Course, PDFDocument, UserProfile, UserActivity
 
 
 @admin.register(Course)
@@ -38,5 +38,13 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'institution', 'created_at']
     list_filter = ['created_at', 'institution']
     search_fields = ['user__username', 'user__email', 'institution', 'bio']
+    readonly_fields = ['created_at']
+
+
+@admin.register(UserActivity)
+class UserActivityAdmin(admin.ModelAdmin):
+    list_display = ['user', 'ip_address', 'device_type', 'os', 'browser', 'city', 'country', 'created_at']
+    list_filter = ['device_type', 'os', 'browser', 'country', 'created_at']
+    search_fields = ['user__username', 'ip_address', 'city', 'country', 'user_agent']
     readonly_fields = ['created_at']
 

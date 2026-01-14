@@ -18,6 +18,8 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'date_joined']
 
 
+from .utils_tracking import record_user_activity
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
     password = serializers.CharField(write_only=True, min_length=8)
@@ -36,6 +38,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
         UserProfile.objects.create(user=user)
+        
+        # Record initial activity
+        request = self.context.get('request')
+        if request:
+            try:
+                # We pass the user explicitly because they might not be in request.user yet
+                record_user_activity(user, request)
+            except Exception as e:
+                print(f"Error recording initial activity: {e}")
+                
         return user
 
 

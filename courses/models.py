@@ -84,6 +84,25 @@ class UserProfile(models.Model):
         verbose_name = "Profil utilisateur"
         verbose_name_plural = "Profils utilisateurs"
 
+class UserActivity(models.Model):
+    """Model to track user activity, IP, device and location"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
+    ip_address = models.GenericIPAddressField(verbose_name="Adresse IP")
+    user_agent = models.TextField(verbose_name="Agent utilisateur")
+    device_type = models.CharField(max_length=50, blank=True, verbose_name="Type d'appareil")
+    os = models.CharField(max_length=50, blank=True, verbose_name="Système d'exploitation")
+    browser = models.CharField(max_length=50, blank=True, verbose_name="Navigateur")
+    city = models.CharField(max_length=100, blank=True, verbose_name="Ville")
+    country = models.CharField(max_length=100, blank=True, verbose_name="Pays")
+    latitude = models.FloatField(null=True, blank=True, verbose_name="Latitude")
+    longitude = models.FloatField(null=True, blank=True, verbose_name="Longitude")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Activité utilisateur"
+        verbose_name_plural = "Activités utilisateurs"
+        ordering = ['-created_at']
+
     def __str__(self):
-        return f"Profil de {self.user.username}"
+        return f"Activité de {self.user.username} le {self.created_at}"
 
