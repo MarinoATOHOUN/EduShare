@@ -34,6 +34,13 @@ urlpatterns = [
     
     # Statistics
     path('stats/', views.stats, name='stats'),
+    
+    # Newsletter
+    path('newsletter/', views.NewsletterCreateView.as_view(), name='newsletter_subscribe'),
+    
+    # Advertisements
+    path('ads/', views.AdvertisementListView.as_view(), name='advertisement_list'),
+    path('ads/interaction/', views.AdInteractionCreateView.as_view(), name='ad_interaction_create'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

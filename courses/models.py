@@ -103,6 +103,88 @@ class UserActivity(models.Model):
         verbose_name_plural = "Activités utilisateurs"
         ordering = ['-created_at']
 
+class Newsletter(models.Model):
+    """Model for newsletter subscriptions"""
+    email = models.EmailField(unique=True, verbose_name="Adresse Email")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Newsletter"
+        verbose_name_plural = "Newsletters"
+        ordering = ['-created_at']
+
     def __str__(self):
-        return f"Activité de {self.user.username} le {self.created_at}"
+        return self.email
+
+
+class Advertisement(models.Model):
+    """Model for custom targeted advertisements"""
+    AD_TYPES = [
+        ('popup', 'Pop-up'),
+        ('notification', 'Notification'),
+        ('banner', 'Bannière'),
+    ]
+
+    TRIGGERS = [
+        ('on_load', 'Au chargement de la page'),
+        ('on_download', 'Au téléchargement'),
+        ('on_upload', 'À l\'envoi d\'un document'),
+        ('on_scroll', 'Au défilement'),
+        ('on_timer', 'Basé sur le temps (périodique)'),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="Titre de la pub")
+    description = models.TextField(verbose_name="Description du produit/service")
+    content = models.TextField(blank=True, help_text="Contenu HTML additionnel", verbose_name="Contenu personnalisé")
+    image = models.ImageField(upload_to='ads/', blank=True, null=True, verbose_name="Image publicitaire")
+    link_url = models.URLField(blank=True, verbose_name="Lien vers le produit")
+    contact_info = models.CharField(max_length=200, blank=True, verbose_name="Contact (Tel/Email)")
+    
+    ad_type = models.CharField(max_length=20, choices=AD_TYPES, default='notification', verbose_name="Type de pub")
+    trigger_action = models.CharField(max_length=20, choices=TRIGGERS, default='on_load', verbose_name="Déclencheur")
+    duration = models.IntegerField(default=5, help_text="Durée d'affichage en secondes (pour les popups/notifs auto-fermantes)", verbose_name="Durée (secondes)")
+    
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    start_date = models.DateTimeField(null=True, blank=True, verbose_name="Date de début")
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name="Date de fin")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Publicité"
+        verbose_name_plural = "Publicités"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
+class AdInteraction(models.Model):
+    """Model to track user engagement with advertisements"""
+    INTERACTION_TYPES = [
+        ('view', 'Vue'),
+        ('click', 'Clic'),
+        ('close', 'Fermeture'),
+    ]
+    
+    ad = models.ForeignKey(Advertisement, on_delete=models.CASCADE, related_name='interactions')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    interaction_type = models.CharField(max_length=10, choices=INTERACTION_TYPES)
+    
+    # For 'close' interactions, track how long the ad was visible
+    time_to_close = models.FloatField(null=True, blank=True, help_text="Temps en secondes avant fermeture")
+    
+    # Contextual info
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Interaction Publicitaire"
+        verbose_name_plural = "Interactions Publicitaires"
+
+    def __str__(self):
+        return f"{self.ad.title} - {self.interaction_type} ({self.created_at})"
 

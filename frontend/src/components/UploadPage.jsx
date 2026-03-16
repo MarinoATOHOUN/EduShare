@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { documentsAPI, coursesAPI } from '../lib/api';
+import AdDisplay from './AdDisplay';
 
 const UploadPage = () => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const UploadPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [showUploadAd, setShowUploadAd] = useState(false);
 
   const navigate = useNavigate();
 
@@ -152,6 +154,7 @@ const UploadPage = () => {
       clearInterval(progressInterval);
       setUploadProgress(100);
       setSuccess(true);
+      setShowUploadAd(true);
 
       setTimeout(() => {
         navigate(`/documents/${result.encrypted_id}`);
@@ -191,6 +194,7 @@ const UploadPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {showUploadAd && <AdDisplay triggerAction="on_upload" />}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Partager un cours</h1>
         <p className="text-muted-foreground">
@@ -264,8 +268,8 @@ const UploadPage = () => {
               <Label>Fichier PDF *</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive
-                    ? 'border-primary bg-primary/5'
-                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
                   } ${loading ? 'opacity-50 pointer-events-none' : ''}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}

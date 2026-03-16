@@ -25,6 +25,7 @@ import {
 import { documentsAPI } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/use-toast';
+import AdDisplay from './AdDisplay';
 
 const DocumentDetailPage = () => {
   const { id } = useParams();
@@ -35,6 +36,7 @@ const DocumentDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [showDownloadAd, setShowDownloadAd] = useState(false);
 
   useEffect(() => {
     loadDocument();
@@ -59,6 +61,10 @@ const DocumentDetailPage = () => {
   const handleDownload = async () => {
     setDownloading(true);
     try {
+      // Show ad trigger
+      setShowDownloadAd(false); // Reset
+      setTimeout(() => setShowDownloadAd(true), 100);
+
       // Open download link in new tab
       window.open(documentsAPI.download(id), '_blank');
 
@@ -173,6 +179,7 @@ const DocumentDetailPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {showDownloadAd && <AdDisplay triggerAction="on_download" />}
       {/* Back Button */}
       <Button variant="ghost" onClick={() => navigate('/documents')} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />

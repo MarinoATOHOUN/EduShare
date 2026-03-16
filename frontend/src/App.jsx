@@ -3,6 +3,7 @@
  * Developed by Marino ATOHOUN
  */
 
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
@@ -19,14 +20,28 @@ import DocumentDetailPage from './components/DocumentDetailPage';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdDisplay from './components/AdDisplay';
 import './App.css';
 
 function App() {
+  const [timerAdKey, setTimerAdKey] = useState(0);
+
+  useEffect(() => {
+    // Trigger a timer ad every 2 minutes
+    const interval = setInterval(() => {
+      setTimerAdKey(prev => prev + 1);
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-background">
+            <AdDisplay triggerAction="on_load" />
+            <AdDisplay key={`timer-ad-${timerAdKey}`} triggerAction="on_timer" />
             <Navbar />
             <main className="container mx-auto px-4 py-8">
               <Routes>

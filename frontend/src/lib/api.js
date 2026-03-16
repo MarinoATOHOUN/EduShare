@@ -181,5 +181,29 @@ export const statsAPI = {
   },
 };
 
+// Newsletter API
+export const newsletterAPI = {
+  subscribe: async (email) => {
+    const response = await api.post('/newsletter/', { email });
+    return response.data;
+  },
+};
+
+// Ads API
+export const adsAPI = {
+  getActiveAds: async () => {
+    const response = await api.get('/ads/');
+    return response.data;
+  },
+  recordInteraction: async (adId, type, timeToClose = null) => {
+    const response = await api.post('/ads/interaction/', {
+      ad: adId,
+      interaction_type: type,
+      time_to_close: timeToClose
+    });
+    return response.data;
+  },
+};
+
 export default api;
 

@@ -5,7 +5,7 @@ Developed by Marino ATOHOUN
 """
 
 from django.contrib import admin
-from .models import Course, PDFDocument, UserProfile, UserActivity
+from .models import Course, PDFDocument, UserProfile, UserActivity, Newsletter, Advertisement, AdInteraction
 
 
 @admin.register(Course)
@@ -48,3 +48,38 @@ class UserActivityAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'ip_address', 'city', 'country', 'user_agent']
     readonly_fields = ['created_at']
 
+
+@admin.register(Newsletter)
+class NewsletterAdmin(admin.ModelAdmin):
+    list_display = ['email', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['email']
+    readonly_fields = ['created_at']
+
+
+@admin.register(Advertisement)
+class AdvertisementAdmin(admin.ModelAdmin):
+    list_display = ['title', 'ad_type', 'trigger_action', 'duration', 'is_active', 'start_date', 'end_date']
+    list_filter = ['ad_type', 'trigger_action', 'is_active', 'created_at']
+    search_fields = ['title', 'description', 'contact_info']
+    fieldsets = (
+        ('Informations Générales', {
+            'fields': ('title', 'description', 'content', 'image')
+        }),
+        ('Ciblage et Type', {
+            'fields': ('ad_type', 'trigger_action', 'duration')
+        }),
+        ('Lien et Contact', {
+            'fields': ('link_url', 'contact_info')
+        }),
+        ('Statut et Dates', {
+            'fields': ('is_active', 'start_date', 'end_date')
+        }),
+    )
+
+@admin.register(AdInteraction)
+class AdInteractionAdmin(admin.ModelAdmin):
+    list_display = ['ad', 'interaction_type', 'user', 'time_to_close', 'created_at']
+    list_filter = ['interaction_type', 'created_at']
+    search_fields = ['ad__title', 'user__username', 'ip_address']
+    readonly_fields = ['ad', 'interaction_type', 'user', 'time_to_close', 'ip_address', 'user_agent', 'created_at']

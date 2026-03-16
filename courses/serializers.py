@@ -6,7 +6,7 @@ Developed by Marino ATOHOUN
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Course, PDFDocument, UserProfile
+from .models import Course, PDFDocument, UserProfile, Newsletter, Advertisement, AdInteraction
 from .utils import encrypt_id
 
 
@@ -117,3 +117,25 @@ class PDFDocumentListSerializer(serializers.ModelSerializer):
     def get_encrypted_id(self, obj):
         return encrypt_id(obj.id)
 
+
+class NewsletterSerializer(serializers.ModelSerializer):
+    """Serializer for Newsletter model"""
+    class Meta:
+        model = Newsletter
+        fields = ['id', 'email', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class AdvertisementSerializer(serializers.ModelSerializer):
+    """Serializer for Advertisement model"""
+    class Meta:
+        model = Advertisement
+        fields = [
+            'id', 'title', 'description', 'content', 'image', 
+            'link_url', 'contact_info', 'ad_type', 'trigger_action', 'duration'
+        ]
+
+class AdInteractionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdInteraction
+        fields = ['ad', 'interaction_type', 'time_to_close']

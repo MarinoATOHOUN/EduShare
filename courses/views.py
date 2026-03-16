@@ -16,10 +16,11 @@ from django.db.models import Q
 from django.views.decorators.clickjacking import xframe_options_exempt
 import os
 
-from .models import Course, PDFDocument, UserProfile
+from .models import Course, PDFDocument, UserProfile, Newsletter, Advertisement, AdInteraction
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserProfileSerializer,
-    CourseSerializer, PDFDocumentSerializer, PDFDocumentListSerializer
+    CourseSerializer, PDFDocumentSerializer, PDFDocumentListSerializer,
+    NewsletterSerializer, AdvertisementSerializer, AdInteractionSerializer
 )
 from .utils import decrypt_id
 
@@ -206,4 +207,48 @@ def stats(request):
         'total_users': total_users,
         'total_downloads': total_downloads
     })
+
+
+class NewsletterCreateView(generics.CreateAPIView):
+    """View for newsletter subscription"""
+    queryset = Newsletter.objects.all()
+    serializer_class = NewsletterSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class AdvertisementListView(generics.ListAPIView):
+    """View for listing active advertisements"""
+    serializer_class = AdvertisementSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        from django.utils import timezone
+        now = timezone.now()
+        queryset = Advertisement.objects.filter(is_active=True)
+        
+        # Filter by date if set
+        queryset = queryset.filter(
+            (Q(start_date__isnull=True) | Q(start_date__lte=now)) &
+            (Q(end_date__isnull=True) | Q(end_date__gte=now))
+        )
+        
+        return queryset.order_by('?')
+
+class AdInteractionCreateView(generics.CreateAPIView):
+    """View for recording ad interactions"""
+    serializer_class = AdInteractionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        # Record IP and User Agent
+        ip_address = self.request.META.get('REMOTE_ADDR')
+        user_agent = self.request.META.get('HTTP_USER_AGENT', '')
+        
+        user = self.request.user if self.request.user.is_authenticated else None
+        
+        serializer.save(
+            user=user,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
 

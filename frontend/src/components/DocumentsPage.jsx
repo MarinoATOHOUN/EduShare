@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Filter, Download, Eye, Calendar, User, FileText } from 'lucide-react';
 import { documentsAPI, coursesAPI } from '../lib/api';
+import AdDisplay from './AdDisplay';
 
 const DocumentsPage = () => {
   const [documents, setDocuments] = useState([]);
@@ -21,6 +22,18 @@ const DocumentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
   const [sortBy, setSortBy] = useState('recent');
+  const [showScrollAd, setShowScrollAd] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 500 && !showScrollAd) {
+        setShowScrollAd(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showScrollAd]);
 
   useEffect(() => {
     loadCourses();
@@ -45,9 +58,9 @@ const DocumentsPage = () => {
       const params = {};
       if (searchTerm) params.search = searchTerm;
       if (selectedCourse) params.course = selectedCourse;
-      
+
       const documentsData = await documentsAPI.getAll(params);
-      
+
       // Sort documents
       let sortedDocuments = [...documentsData];
       switch (sortBy) {
@@ -63,7 +76,7 @@ const DocumentsPage = () => {
         default:
           break;
       }
-      
+
       setDocuments(sortedDocuments);
     } catch (error) {
       console.error('Error loading documents:', error);
@@ -135,9 +148,9 @@ const DocumentsPage = () => {
               </Link>
             </Button>
             <Button size="sm" variant="outline" asChild>
-              <a 
-                href={documentsAPI.download(document.encrypted_id)} 
-                target="_blank" 
+              <a
+                href={documentsAPI.download(document.encrypted_id)}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center"
               >
@@ -178,6 +191,7 @@ const DocumentsPage = () => {
 
   return (
     <div className="space-y-6">
+      {showScrollAd && <AdDisplay triggerAction="on_scroll" />}
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -204,7 +218,7 @@ const DocumentsPage = () => {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={selectedCourse || 'all'} onValueChange={handleCourseChange}>
               <SelectTrigger>
                 <Filter className="h-4 w-4 mr-2" />
