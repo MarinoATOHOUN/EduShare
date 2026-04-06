@@ -33,8 +33,8 @@ const HomePage = () => {
       ]);
 
       setStats(statsData);
-      setRecentDocuments(documentsData.slice(0, 6));
-      setCourses(coursesData.slice(0, 8));
+      setRecentDocuments(Array.isArray(documentsData) ? documentsData.slice(0, 6) : []);
+      setCourses(Array.isArray(coursesData) ? coursesData.slice(0, 8) : []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

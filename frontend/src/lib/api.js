@@ -6,7 +6,8 @@
 import axios from 'axios';
 
 // Use environment variable or default to relative path for production
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const normalizeBaseUrl = (url) => (url || '').replace(/\/+$/, '');
+const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_URL) || '/api';
 const unwrapList = (data) => {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.results)) return data.results;
@@ -104,7 +105,7 @@ export const authAPI = {
 export const coursesAPI = {
   getAll: async () => {
     const response = await api.get('/courses/');
-    return response.data;
+    return unwrapList(response.data);
   },
 
   getById: async (id) => {
@@ -132,7 +133,7 @@ export const coursesAPI = {
 export const documentsAPI = {
   getAll: async (params = {}) => {
     const response = await api.get('/documents/', { params });
-    return response.data;
+    return unwrapList(response.data);
   },
 
   getById: async (id) => {
@@ -174,7 +175,7 @@ export const documentsAPI = {
 
   getUserDocuments: async () => {
     const response = await api.get('/my-documents/');
-    return response.data;
+    return unwrapList(response.data);
   },
 
   chat: async (id, message, history = []) => {
