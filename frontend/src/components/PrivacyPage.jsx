@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import BlackBenAILink from './BlackBenAILink';
 
 const PrivacyPage = () => {
     return (
@@ -20,7 +21,7 @@ const PrivacyPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        Chez EduShare, opéré par <strong>BlackBenAI</strong>, nous accordons une importance capitale à la protection de vos données personnelles. Cette politique détaille comment nous collectons, utilisons et protégeons vos informations.
+                        Chez EduShare, opéré par <BlackBenAILink />, nous accordons une importance capitale à la protection de vos données personnelles. Cette politique détaille comment nous collectons, utilisons et protégeons vos informations.
                     </p>
                 </CardContent>
             </Card>
@@ -65,7 +66,7 @@ const PrivacyPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        <strong>BlackBenAI</strong> ne vend, n'échange, ni ne loue vos données personnelles à des tiers. Nous ne partageons des informations que dans les cas suivants :
+                        <BlackBenAILink /> ne vend, n'échange, ni ne loue vos données personnelles à des tiers. Nous ne partageons des informations que dans les cas suivants :
                     </p>
                     <ul className="list-disc pl-6 space-y-2">
                         <li>Avec votre consentement explicite.</li>
@@ -109,7 +110,7 @@ const PrivacyPage = () => {
             </Card>
 
             <div className="text-center text-sm text-muted-foreground py-4">
-                <p>&copy; 2025 EduShare par BlackBenAI. Tous droits réservés.</p>
+                <p>&copy; 2025 EduShare par <BlackBenAILink />. Tous droits réservés.</p>
             </div>
         </div>
     );

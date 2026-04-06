@@ -10,6 +10,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { newsletterAPI } from '../lib/api';
 import { useToast } from '@/hooks/use-toast';
+import BlackBenAILink from './BlackBenAILink';
 
 const Footer = () => {
     const [email, setEmail] = useState('');
@@ -51,7 +52,7 @@ const Footer = () => {
                             <span className="text-lg font-bold text-foreground">EduShare</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            Une plateforme moderne de partage de documents éducatifs créée par <strong>BlackBenAI</strong>. Partagez, apprenez et grandissez ensemble.
+                            Une plateforme moderne de partage de documents éducatifs créée par <BlackBenAILink />. Partagez, apprenez et grandissez ensemble.
                         </p>
                     </div>
 
@@ -134,7 +135,7 @@ const Footer = () => {
 
                 <div className="mt-8 pt-8 border-t text-center">
                     <p className="text-sm text-muted-foreground">
-                        &copy; {new Date().getFullYear()} EduShare. Créé avec passion par <strong>BlackBenAI</strong>.
+                        &copy; {new Date().getFullYear()} EduShare. Créé avec passion par <BlackBenAILink />.
                     </p>
                 </div>
             </div>

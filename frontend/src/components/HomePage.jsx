@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Users, Download, FileText, ArrowRight, Upload, Search } from 'lucide-react';
 import { statsAPI, documentsAPI, coursesAPI } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import BlackBenAILink from './BlackBenAILink';
 
 const HomePage = () => {
   const { isAuthenticated } = useAuth();
@@ -64,7 +65,7 @@ const HomePage = () => {
             <span className="text-primary"> cours PDF</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            EduShare est une plateforme gratuite de partage de documents PDF éducatifs créée par <strong>BlackBenAI</strong>.
+            EduShare est une plateforme gratuite de partage de documents PDF éducatifs créée par <BlackBenAILink />.
             Partagez vos cours et accédez à une bibliothèque de ressources pédagogiques.
           </p>
         </div>
@@ -257,4 +258,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

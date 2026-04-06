@@ -6,6 +6,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import BlackBenAILink from './BlackBenAILink';
 
 const TermsPage = () => {
     return (
@@ -21,7 +22,7 @@ const TermsPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        En accédant et en utilisant EduShare, une plateforme créée par <strong>BlackBenAI</strong>, vous acceptez d'être lié par les présentes conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services.
+                        En accédant et en utilisant EduShare, une plateforme créée par <BlackBenAILink />, vous acceptez d'être lié par les présentes conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services.
                     </p>
                 </CardContent>
             </Card>
@@ -60,7 +61,7 @@ const TermsPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        La plateforme EduShare, son design, son code et ses logos sont la propriété exclusive de <strong>BlackBenAI</strong>. Les documents partagés restent la propriété de leurs auteurs respectifs, mais en les publiant sur EduShare, vous accordez à la plateforme une licence mondiale pour héberger et diffuser ces contenus.
+                        La plateforme EduShare, son design, son code et ses logos sont la propriété exclusive de <BlackBenAILink />. Les documents partagés restent la propriété de leurs auteurs respectifs, mais en les publiant sur EduShare, vous accordez à la plateforme une licence mondiale pour héberger et diffuser ces contenus.
                     </p>
                 </CardContent>
             </Card>
@@ -71,7 +72,7 @@ const TermsPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        <strong>BlackBenAI</strong> ne garantit pas l'exactitude ou la qualité des documents partagés par les utilisateurs. L'utilisation des ressources se fait sous la seule responsabilité de l'utilisateur. Nous ne pourrons être tenus responsables des dommages directs ou indirects résultant de l'utilisation du service.
+                        <BlackBenAILink /> ne garantit pas l'exactitude ou la qualité des documents partagés par les utilisateurs. L'utilisation des ressources se fait sous la seule responsabilité de l'utilisateur. Nous ne pourrons être tenus responsables des dommages directs ou indirects résultant de l'utilisation du service.
                     </p>
                 </CardContent>
             </Card>
@@ -88,7 +89,7 @@ const TermsPage = () => {
             </Card>
 
             <div className="text-center text-sm text-muted-foreground py-4">
-                <p>&copy; 2025 EduShare par BlackBenAI. Tous droits réservés.</p>
+                <p>&copy; 2025 EduShare par <BlackBenAILink />. Tous droits réservés.</p>
             </div>
         </div>
     );
