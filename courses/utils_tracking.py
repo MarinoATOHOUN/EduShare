@@ -2,6 +2,10 @@ import geocoder
 from ipware import get_client_ip
 from user_agents import parse
 from .models import UserActivity
+import logging
+import ipaddress
+
+logger = logging.getLogger("courses.tracking")
 
 def get_user_activity_info(request):
     """Extract IP, device and location info from request"""
@@ -25,6 +29,24 @@ def get_user_activity_info(request):
     longitude = None
     
     try:
+        # Skip geo lookup for local/private IPs (reduces latency + avoids noisy errors)
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved:
+                return {
+                    'ip_address': ip,
+                    'user_agent': ua_string,
+                    'device_type': device_type,
+                    'os': os_info,
+                    'browser': browser_info,
+                    'city': city,
+                    'country': country,
+                    'latitude': latitude,
+                    'longitude': longitude
+                }
+        except ValueError:
+            pass
+
         # Use free ip-api.com via geocoder
         g = geocoder.ip(ip)
         if g.ok:
@@ -34,7 +56,7 @@ def get_user_activity_info(request):
                 latitude = g.latlng[0]
                 longitude = g.latlng[1]
     except Exception as e:
-        print(f"Error getting location: {e}")
+        logger.warning("Error getting location for ip=%s: %s", ip, e)
         
     return {
         'ip_address': ip,
@@ -53,7 +75,11 @@ def record_user_activity(user, request):
     if not user.is_authenticated:
         return
         
-    info = get_user_activity_info(request)
+    try:
+        info = get_user_activity_info(request)
+    except Exception:
+        logger.exception("Error building user activity info")
+        return
     
     # Get last activity
     last_activity = UserActivity.objects.filter(user=user).first()

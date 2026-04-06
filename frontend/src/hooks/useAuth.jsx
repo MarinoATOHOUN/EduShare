@@ -41,9 +41,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     try {
-      const response = await authAPI.login(username, password);
+      const response = await authAPI.login(email, password);
       const userData = await authAPI.getCurrentUser();
       setUser(userData);
       setIsAuthenticated(true);

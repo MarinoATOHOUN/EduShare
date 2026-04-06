@@ -13,4 +13,12 @@ from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
+# Load local .env if present (useful for non-docker deployments)
+try:
+    from backend.dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    pass
+
 application = get_asgi_application()

@@ -22,7 +22,7 @@ def decrypt_id(encrypted_id):
         return None
     try:
         # Add padding back
-        padding = '=' * (4 - len(encrypted_id) % 4)
+        padding = '=' * ((4 - len(encrypted_id) % 4) % 4)
         xor_result = base64.urlsafe_b64decode(encrypted_id + padding)
         key = getattr(settings, 'SECRET_KEY', 'default_key')[:8]
         repeated_key = (key * (len(xor_result) // len(key) + 1))[:len(xor_result)]

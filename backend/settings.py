@@ -14,9 +14,42 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+def _load_dotenv(path: Path) -> None:
+    """
+    Minimal .env loader (no external dependency).
+    - Ignores comments/blank lines
+    - Supports: KEY=VALUE, export KEY=VALUE
+    - Does not override existing environment variables
+    """
+    try:
+        if not path.exists():
+            return
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[len("export ") :].strip()
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("'").strip('"')
+            if not key:
+                continue
+            os.environ.setdefault(key, value)
+    except Exception:
+        # Never crash settings import because of a .env parsing issue
+        return
+
+
+# Load env vars from project root .env (useful in dev and simple deployments)
+_load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -43,7 +76,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'courses',
+    'courses.apps.CoursesConfig',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +88,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'courses.request_logging_middleware.RequestLoggingMiddleware',
     'courses.middleware.UserActivityMiddleware',
 ]
 
@@ -126,6 +160,10 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Reverse proxy support (for correct request.build_absolute_uri() host/proto)
+USE_X_FORWARDED_HOST = os.environ.get("USE_X_FORWARDED_HOST", "True") == "True"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -167,3 +205,61 @@ SIMPLE_JWT = {
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
+# Groq (LLM)
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "llama-3.3-70b-versatile",
+]
+
+
+# =========================
+# Logging
+# =========================
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_DIR = BASE_DIR / "logs"
+try:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    # If the filesystem is read-only or permissions deny, fall back to console-only logging
+    LOG_DIR = None
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(asctime)s %(levelname)s %(name)s [%(process)d] %(message)s",
+        },
+        "simple": {
+            "format": "%(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": LOG_LEVEL,
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": True},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "courses": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+}
+
+if LOG_DIR:
+    LOGGING["handlers"]["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": LOG_LEVEL,
+        "formatter": "verbose",
+        "filename": str(LOG_DIR / "backend.log"),
+        "maxBytes": 5 * 1024 * 1024,
+        "backupCount": 5,
+    }
+    # Attach file handler to our app logger and root.
+    LOGGING["loggers"]["courses"]["handlers"] = ["console", "file"]
+    LOGGING["root"]["handlers"] = ["console", "file"]

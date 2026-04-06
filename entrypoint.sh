@@ -4,6 +4,10 @@
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
+# Seed reference data (courses + study levels)
+echo "Seeding reference data..."
+python manage.py seed_reference_data
+
 # Collect static files (optional, uncomment if needed)
 # echo "Collecting static files..."
 # python manage.py collectstatic --noinput

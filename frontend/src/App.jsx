@@ -21,6 +21,8 @@ import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdDisplay from './components/AdDisplay';
+import DeveloperApiPage from './components/DeveloperApiPage';
+import PricingPage from './components/PricingPage';
 import './App.css';
 
 function App() {
@@ -52,6 +54,8 @@ function App() {
                 <Route path="/documents/:id" element={<DocumentDetailPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/developers" element={<DeveloperApiPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route
                   path="/upload"
                   element={

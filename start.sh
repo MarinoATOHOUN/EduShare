@@ -25,6 +25,12 @@ fi
 echo "✅ Dépendances vérifiées"
 echo ""
 
+# Choisir l'interpréteur Python (venv si disponible)
+PYTHON_BIN="python3"
+if [ -x "./venv/bin/python" ]; then
+    PYTHON_BIN="./venv/bin/python"
+fi
+
 # Démarrage du backend Django
 echo "🔧 Démarrage du backend Django..."
 cd "$(dirname "$0")"
@@ -32,19 +38,26 @@ cd "$(dirname "$0")"
 # Vérifier si la base de données existe
 if [ ! -f "db.sqlite3" ]; then
     echo "📊 Initialisation de la base de données..."
-    python3 manage.py makemigrations
-    python3 manage.py migrate
+    $PYTHON_BIN manage.py makemigrations
+    $PYTHON_BIN manage.py migrate
     
     echo "👤 Création du superutilisateur admin..."
-    echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | python3 manage.py shell
+    echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | $PYTHON_BIN manage.py shell
     
+    echo "🧩 Seed des données de référence..."
+    $PYTHON_BIN manage.py seed_reference_data
+
     echo "📚 Ajout des données de test..."
-    python3 populate_data.py
+    $PYTHON_BIN populate_data.py
+else
+    # Même si la DB existe, on s'assure que les données de référence existent
+    echo "🧩 Seed des données de référence..."
+    $PYTHON_BIN manage.py seed_reference_data
 fi
 
 # Démarrer le serveur Django en arrière-plan
 echo "🌐 Démarrage du serveur Django sur le port 8000..."
-python3 manage.py runserver 0.0.0.0:8000 &
+$PYTHON_BIN manage.py runserver 0.0.0.0:8000 &
 DJANGO_PID=$!
 
 # Attendre que Django démarre
@@ -94,4 +107,5 @@ trap cleanup SIGINT
 
 # Attendre indéfiniment
 wait
+
 

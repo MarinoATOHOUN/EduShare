@@ -15,7 +15,7 @@ import { Loader2, BookOpen } from 'lucide-react';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const result = await login(formData.username, formData.password);
+      const result = await login(formData.email, formData.password);
       
       if (result.success) {
         const from = location.state?.from?.pathname || '/';
@@ -88,16 +88,16 @@ const LoginPage = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="username">Nom d'utilisateur</Label>
+                <Label htmlFor="email">Adresse email</Label>
                 <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  value={formData.username}
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  placeholder="Votre nom d'utilisateur"
+                  placeholder="Votre adresse email"
                 />
               </div>
 

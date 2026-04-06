@@ -163,6 +163,37 @@ npm run build
 ### Statistiques
 - `GET /api/stats/` - Statistiques de la plateforme
 
+## API Développeurs (API Key + Abonnements)
+
+EduShare expose une API “Data” pensée pour extraire des cours en volume (constitution d’une base de données éducation).
+
+### Principe
+- Les utilisateurs génèrent une **API Key** depuis l’interface “API (Développeurs)” ou via l’endpoint backend.
+- Les requêtes “Data API” utilisent la clé via header `X-API-Key`.
+- Des **quotas** (requêtes/téléchargements par jour) s’appliquent selon l’offre (Freemium / Starter / Pro).
+
+### Endpoints développeurs (backend)
+- `GET /api/developer/plans/` — Liste des offres
+- `GET /api/developer/subscription/` — Offre courante (utilisateur connecté)
+- `GET /api/developer/api-keys/` — Liste des clés (utilisateur connecté)
+- `POST /api/developer/api-keys/` — Créer une clé (retourne la clé une seule fois)
+- `POST /api/developer/api-keys/{id}/revoke/` — Révoquer une clé
+
+### Data API (API key requise)
+- `GET /api/data/documents/` — Liste paginée des documents (supporte `search`, `domain`, `study_level`, `study_sublevel`, `tag`, `page`, `page_size`)
+- `GET /api/data/documents/{encrypted_id}/download/` — Télécharger un PDF (compte dans le quota “downloads/jour”)
+
+### Exemple (curl)
+```bash
+curl -H "X-API-Key: <ton_api_key>" "http://localhost:8000/api/data/whoami/"
+curl -H "X-API-Key: <ton_api_key>" "http://localhost:8000/api/data/documents/?search=python&page_size=100"
+curl -L -H "X-API-Key: <ton_api_key>" "http://localhost:8000/api/data/documents/<encrypted_id>/download/" -o cours.pdf
+```
+
+Note: la valeur du header doit être la clé brute `edush_xxx.yyy` (ne pas préfixer par `apikey=`).
+
+Documentation complète: `docs/API.md`
+
 ## Comptes de Démonstration
 
 ### Utilisateurs de test

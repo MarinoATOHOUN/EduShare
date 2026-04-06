@@ -7,6 +7,11 @@ import axios from 'axios';
 
 // Use environment variable or default to relative path for production
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const unwrapList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
+};
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -52,7 +57,7 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         // Refresh failed, redirect to login
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -66,8 +71,8 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  login: async (username, password) => {
-    const response = await api.post('/auth/login/', { username, password });
+  login: async (email, password) => {
+    const response = await api.post('/auth/login/', { email, password });
     const { access, refresh } = response.data;
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
@@ -171,6 +176,11 @@ export const documentsAPI = {
     const response = await api.get('/my-documents/');
     return response.data;
   },
+
+  chat: async (id, message, history = []) => {
+    const response = await api.post(`/documents/${id}/chat/`, { message, history });
+    return response.data;
+  },
 };
 
 // Stats API
@@ -193,7 +203,7 @@ export const newsletterAPI = {
 export const adsAPI = {
   getActiveAds: async () => {
     const response = await api.get('/ads/');
-    return response.data;
+    return unwrapList(response.data);
   },
   recordInteraction: async (adId, type, timeToClose = null) => {
     const response = await api.post('/ads/interaction/', {
@@ -205,5 +215,36 @@ export const adsAPI = {
   },
 };
 
-export default api;
+// Study levels API (reference data)
+export const studyLevelsAPI = {
+  getAll: async () => {
+    const response = await api.get('/study-levels/');
+    return unwrapList(response.data);
+  },
+};
 
+// Developer API (plans, api keys)
+export const developerAPI = {
+  getPlans: async () => {
+    const response = await api.get('/developer/plans/');
+    return unwrapList(response.data);
+  },
+  getCurrentSubscription: async () => {
+    const response = await api.get('/developer/subscription/');
+    return response.data;
+  },
+  listApiKeys: async () => {
+    const response = await api.get('/developer/api-keys/');
+    return response.data;
+  },
+  createApiKey: async (name = '') => {
+    const response = await api.post('/developer/api-keys/', { name });
+    return response.data;
+  },
+  revokeApiKey: async (keyId) => {
+    const response = await api.post(`/developer/api-keys/${keyId}/revoke/`);
+    return response.data;
+  },
+};
+
+export default api;

@@ -8,6 +8,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 import os
+import hashlib
+import secrets
+from django.utils import timezone
 
 
 def pdf_upload_path(instance, filename):
@@ -24,12 +27,193 @@ class Course(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Cours"
-        verbose_name_plural = "Cours"
+        verbose_name = "Domaine"
+        verbose_name_plural = "Domaines"
         ordering = ['name']
 
     def __str__(self):
         return f"{self.name} ({self.domain})"
+
+
+class StudyLevel(models.Model):
+    """Reference model for study levels (e.g. Primaire, Université)."""
+    key = models.SlugField(max_length=64, unique=True, verbose_name="Clé")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordre")
+
+    class Meta:
+        verbose_name = "Niveau d'étude"
+        verbose_name_plural = "Niveaux d'étude"
+        ordering = ["order", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class StudySubLevel(models.Model):
+    """Reference model for study sub-levels (e.g. CE1, Terminale)."""
+    level = models.ForeignKey(StudyLevel, on_delete=models.CASCADE, related_name="sublevels")
+    key = models.SlugField(max_length=64, verbose_name="Clé")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordre")
+
+    class Meta:
+        verbose_name = "Sous-niveau"
+        verbose_name_plural = "Sous-niveaux"
+        ordering = ["level__order", "order", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["level", "key"], name="uniq_sublevel_level_key"),
+        ]
+
+    def __str__(self):
+        return f"{self.level.name} - {self.name}"
+
+
+class Tag(models.Model):
+    """Simple tag model for documents search and discovery."""
+    key = models.SlugField(max_length=64, unique=True, verbose_name="Clé")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class APIPlan(models.Model):
+    """API subscription plan (freemium/paid tiers)."""
+
+    BILLING_MONTHLY = "monthly"
+    BILLING_YEARLY = "yearly"
+    BILLING_CHOICES = [
+        (BILLING_MONTHLY, "Mensuel"),
+        (BILLING_YEARLY, "Annuel"),
+    ]
+
+    code = models.SlugField(max_length=32, unique=True, verbose_name="Code")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    description = models.TextField(blank=True, verbose_name="Description")
+    billing_period = models.CharField(max_length=16, choices=BILLING_CHOICES, default=BILLING_MONTHLY)
+    price_cents = models.PositiveIntegerField(default=0, verbose_name="Prix (centimes)")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+
+    # Quotas
+    daily_requests_limit = models.PositiveIntegerField(default=500, verbose_name="Limite requêtes/jour")
+    daily_download_limit = models.PositiveIntegerField(default=50, verbose_name="Limite téléchargements/jour")
+    max_page_size = models.PositiveIntegerField(default=100, verbose_name="Taille max page")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Offre API"
+        verbose_name_plural = "Offres API"
+        ordering = ["price_cents", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class UserSubscription(models.Model):
+    """User subscription to an API plan. Payment integration can be added later."""
+
+    STATUS_ACTIVE = "active"
+    STATUS_CANCELED = "canceled"
+    STATUS_EXPIRED = "expired"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Actif"),
+        (STATUS_CANCELED, "Annulé"),
+        (STATUS_EXPIRED, "Expiré"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_subscriptions")
+    plan = models.ForeignKey(APIPlan, on_delete=models.PROTECT, related_name="subscriptions")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    started_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Abonnement API"
+        verbose_name_plural = "Abonnements API"
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.plan.code} ({self.status})"
+
+    @property
+    def is_current(self):
+        if self.status != self.STATUS_ACTIVE:
+            return False
+        if self.ends_at and self.ends_at <= timezone.now():
+            return False
+        return True
+
+
+class APIKey(models.Model):
+    """API Key for programmatic access. Only stores a hash (never plaintext)."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
+    name = models.CharField(max_length=100, blank=True, default="", verbose_name="Nom")
+
+    prefix = models.CharField(max_length=32, db_index=True, verbose_name="Préfixe")
+    key_hash = models.CharField(max_length=64, db_index=True, verbose_name="Hash (sha256)")
+
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Clé API"
+        verbose_name_plural = "Clés API"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["prefix", "key_hash"], name="uniq_api_key_prefix_hash"),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.prefix}"
+
+    @staticmethod
+    def hash_key(plaintext: str) -> str:
+        return hashlib.sha256(plaintext.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def generate(cls) -> tuple[str, str, str]:
+        """Returns (plaintext_key, prefix, hash)."""
+        prefix = "edush_" + secrets.token_hex(3)  # 6 hex chars
+        secret_part = secrets.token_urlsafe(32)
+        plaintext = f"{prefix}.{secret_part}"
+        return plaintext, prefix, cls.hash_key(plaintext)
+
+    def revoke(self):
+        if not self.revoked_at:
+            self.revoked_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["is_active", "revoked_at"])
+
+
+class APIUsageDaily(models.Model):
+    """Daily counters for API usage per key (quotas)."""
+
+    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE, related_name="daily_usage")
+    date = models.DateField(db_index=True)
+    requests_count = models.PositiveIntegerField(default=0)
+    downloads_count = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Usage API (jour)"
+        verbose_name_plural = "Usages API (jour)"
+        constraints = [
+            models.UniqueConstraint(fields=["api_key", "date"], name="uniq_api_key_date"),
+        ]
 
 
 class PDFDocument(models.Model):
@@ -38,6 +222,16 @@ class PDFDocument(models.Model):
     description = models.TextField(blank=True, verbose_name="Description")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='documents')
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='uploaded_documents')
+    study_sublevel = models.ForeignKey(
+        StudySubLevel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="documents",
+        verbose_name="Sous-niveau",
+    )
+    tags = models.ManyToManyField(Tag, blank=True, related_name="documents", verbose_name="Tags")
+
     pdf_file = models.FileField(
         upload_to=pdf_upload_path,
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
@@ -71,6 +265,21 @@ class PDFDocument(models.Model):
         """Increment download counter"""
         self.download_count += 1
         self.save(update_fields=['download_count'])
+
+
+class PDFDocumentText(models.Model):
+    """Cached extracted text (per page) for a PDF document."""
+
+    document = models.OneToOneField(PDFDocument, on_delete=models.CASCADE, related_name="text_cache")
+    pages = models.JSONField(default=list, blank=True)  # list[str]
+
+    file_size = models.PositiveIntegerField(default=0)
+    file_mtime = models.FloatField(default=0)  # os.path.getmtime
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Texte PDF (cache)"
+        verbose_name_plural = "Textes PDF (cache)"
 
 
 class UserProfile(models.Model):
@@ -187,4 +396,3 @@ class AdInteraction(models.Model):
 
     def __str__(self):
         return f"{self.ad.title} - {self.interaction_type} ({self.created_at})"
-

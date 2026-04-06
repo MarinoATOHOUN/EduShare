@@ -15,7 +15,6 @@ import { Loader2, BookOpen, CheckCircle } from 'lucide-react';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
     password_confirm: '',
@@ -157,19 +156,6 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="username">Nom d'utilisateur</Label>
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  placeholder="Choisissez un nom d'utilisateur"
-                />
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

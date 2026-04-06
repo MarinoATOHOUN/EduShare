@@ -12,69 +12,15 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
+from django.core.management import call_command
 from django.contrib.auth.models import User
-from courses.models import Course, UserProfile
+from courses.models import UserProfile
 
 def create_sample_data():
     """Create sample courses and users"""
-    
-    # Create sample courses
-    courses_data = [
-        {
-            'name': 'Mathématiques',
-            'domain': 'mathematiques',
-            'description': 'Cours de mathématiques pour tous niveaux'
-        },
-        {
-            'name': 'Informatique',
-            'domain': 'informatique',
-            'description': 'Cours de programmation et informatique'
-        },
-        {
-            'name': 'Physique',
-            'domain': 'physique',
-            'description': 'Cours de physique générale et appliquée'
-        },
-        {
-            'name': 'Chimie',
-            'domain': 'chimie',
-            'description': 'Cours de chimie organique et inorganique'
-        },
-        {
-            'name': 'Biologie',
-            'domain': 'biologie',
-            'description': 'Cours de biologie cellulaire et moléculaire'
-        },
-        {
-            'name': 'Histoire',
-            'domain': 'histoire',
-            'description': 'Cours d\'histoire contemporaine et ancienne'
-        },
-        {
-            'name': 'Géographie',
-            'domain': 'geographie',
-            'description': 'Cours de géographie physique et humaine'
-        },
-        {
-            'name': 'Littérature',
-            'domain': 'litterature',
-            'description': 'Cours de littérature française et mondiale'
-        }
-    ]
-    
-    print("Création des cours...")
-    for course_data in courses_data:
-        course, created = Course.objects.get_or_create(
-            domain=course_data['domain'],
-            defaults={
-                'name': course_data['name'],
-                'description': course_data['description']
-            }
-        )
-        if created:
-            print(f"✓ Cours créé: {course.name}")
-        else:
-            print(f"- Cours existant: {course.name}")
+
+    print("Seed des données de référence (cours + niveaux)...")
+    call_command("seed_reference_data")
     
     # Create sample users
     users_data = [
@@ -132,4 +78,3 @@ def create_sample_data():
 
 if __name__ == '__main__':
     create_sample_data()
-

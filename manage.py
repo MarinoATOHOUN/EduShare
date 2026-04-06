@@ -5,6 +5,14 @@ import sys
 
 
 def main():
+    # Load local .env for dev runs (optional in production)
+    try:
+        from backend.dotenv import load_dotenv
+
+        load_dotenv()
+    except Exception:
+        pass
+
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
     try:

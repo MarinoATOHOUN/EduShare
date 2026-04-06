@@ -16,11 +16,12 @@ from django.db.models import Q
 from django.views.decorators.clickjacking import xframe_options_exempt
 import os
 
-from .models import Course, PDFDocument, UserProfile, Newsletter, Advertisement, AdInteraction
+from .models import Course, PDFDocument, StudyLevel, UserProfile, Newsletter, Advertisement, AdInteraction
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserProfileSerializer,
     CourseSerializer, PDFDocumentSerializer, PDFDocumentListSerializer,
-    NewsletterSerializer, AdvertisementSerializer, AdInteractionSerializer
+    NewsletterSerializer, AdvertisementSerializer, AdInteractionSerializer,
+    StudyLevelSerializer,
 )
 from .utils import decrypt_id
 
@@ -63,7 +64,11 @@ class PDFDocumentListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        queryset = PDFDocument.objects.filter(is_active=True)
+        queryset = (
+            PDFDocument.objects.filter(is_active=True)
+            .select_related("course", "uploaded_by", "study_sublevel", "study_sublevel__level")
+            .prefetch_related("tags")
+        )
         
         # Filter by course
         course_id = self.request.query_params.get('course', None)
@@ -79,10 +84,35 @@ class PDFDocumentListCreateView(generics.ListCreateAPIView):
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
-                Q(title__icontains=search) | Q(description__icontains=search)
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(tags__name__icontains=search)
             )
+
+        # Filter by study level/sublevel
+        study_level = self.request.query_params.get('study_level', None)
+        if study_level:
+            if str(study_level).isdigit():
+                queryset = queryset.filter(study_sublevel__level_id=int(study_level))
+            else:
+                queryset = queryset.filter(
+                    Q(study_sublevel__level__key=study_level) | Q(study_sublevel__level__name=study_level)
+                )
+
+        study_sublevel = self.request.query_params.get('study_sublevel', None)
+        if study_sublevel:
+            if str(study_sublevel).isdigit():
+                queryset = queryset.filter(study_sublevel_id=int(study_sublevel))
+            else:
+                queryset = queryset.filter(
+                    Q(study_sublevel__key=study_sublevel) | Q(study_sublevel__name=study_sublevel)
+                )
+
+        tag = self.request.query_params.get('tag', None)
+        if tag:
+            queryset = queryset.filter(Q(tags__key=tag) | Q(tags__name__iexact=tag))
         
-        return queryset.order_by('-created_at')
+        return queryset.distinct().order_by('-created_at')
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -92,7 +122,9 @@ class PDFDocumentListCreateView(generics.ListCreateAPIView):
 
 class PDFDocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     """View for PDF document details"""
-    queryset = PDFDocument.objects.filter(is_active=True)
+    queryset = PDFDocument.objects.filter(is_active=True).select_related(
+        "course", "uploaded_by", "study_sublevel", "study_sublevel__level"
+    ).prefetch_related("tags")
     serializer_class = PDFDocumentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -136,6 +168,8 @@ def download_pdf(request, document_id):
             decoded_id = decrypt_id(document_id)
             if decoded_id:
                 document_id = decoded_id
+            else:
+                raise Http404("Document non trouvé")
                 
         document = get_object_or_404(PDFDocument, id=document_id, is_active=True)
         
@@ -165,6 +199,8 @@ def preview_pdf(request, document_id):
             decoded_id = decrypt_id(document_id)
             if decoded_id:
                 document_id = decoded_id
+            else:
+                raise Http404("Document non trouvé")
                 
         document = get_object_or_404(PDFDocument, id=document_id, is_active=True)
         
@@ -234,6 +270,15 @@ class AdvertisementListView(generics.ListAPIView):
         
         return queryset.order_by('?')
 
+
+class StudyLevelListView(generics.ListAPIView):
+    """List study levels with their sub-levels (reference data)."""
+    serializer_class = StudyLevelSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return StudyLevel.objects.all().prefetch_related("sublevels")
+
 class AdInteractionCreateView(generics.CreateAPIView):
     """View for recording ad interactions"""
     serializer_class = AdInteractionSerializer
@@ -251,4 +296,3 @@ class AdInteractionCreateView(generics.CreateAPIView):
             ip_address=ip_address,
             user_agent=user_agent
         )
-

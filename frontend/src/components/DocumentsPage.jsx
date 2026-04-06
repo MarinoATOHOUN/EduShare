@@ -118,6 +118,16 @@ const DocumentsPage = () => {
         </div>
         <div className="flex items-center space-x-2 flex-wrap gap-2">
           <Badge variant="secondary">{document.course_domain}</Badge>
+          {document.study_level && (
+            <Badge variant="outline">
+              {document.study_level}{document.study_sublevel ? ` • ${document.study_sublevel}` : ''}
+            </Badge>
+          )}
+          {Array.isArray(document.tags) && document.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="outline">
+              #{tag}
+            </Badge>
+          ))}
           <span className="text-sm text-muted-foreground flex items-center">
             <FileText className="h-3 w-3 mr-1" />
             {document.file_size_mb} MB
@@ -284,4 +294,3 @@ const DocumentsPage = () => {
 };
 
 export default DocumentsPage;
-

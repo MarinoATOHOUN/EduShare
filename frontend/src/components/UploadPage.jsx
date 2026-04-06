@@ -13,8 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
-import { documentsAPI, coursesAPI } from '../lib/api';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { documentsAPI, coursesAPI, studyLevelsAPI } from '../lib/api';
 import AdDisplay from './AdDisplay';
 
 const UploadPage = () => {
@@ -22,9 +23,14 @@ const UploadPage = () => {
     title: '',
     description: '',
     course_id: '',
+    study_sublevel_id: '',
     pdf_file: null
   });
+  const [tags, setTags] = useState([]);
+  const [tagDraft, setTagDraft] = useState('');
   const [courses, setCourses] = useState([]);
+  const [studyLevels, setStudyLevels] = useState([]);
+  const [selectedStudyLevelId, setSelectedStudyLevelId] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
@@ -36,6 +42,7 @@ const UploadPage = () => {
 
   useEffect(() => {
     loadCourses();
+    loadStudyLevels();
   }, []);
 
   const loadCourses = async () => {
@@ -47,11 +54,62 @@ const UploadPage = () => {
     }
   };
 
+  const loadStudyLevels = async () => {
+    try {
+      const levelsData = await studyLevelsAPI.getAll();
+      setStudyLevels(levelsData);
+    } catch (error) {
+      console.error('Error loading study levels:', error);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+    setError('');
+  };
+
+  const normalizeTag = (value) => value.trim().replace(/\s+/g, ' ');
+
+  const addTag = (rawValue) => {
+    const name = normalizeTag(rawValue || '');
+    if (!name) return;
+    const trimmed = name.length > 50 ? name.slice(0, 50) : name;
+
+    setTags((prev) => {
+      const exists = prev.some((t) => t.toLowerCase() === trimmed.toLowerCase());
+      if (exists) return prev;
+      return [...prev, trimmed].slice(0, 20);
+    });
+  };
+
+  const removeTag = (tagToRemove) => {
+    setTags((prev) => prev.filter((t) => t !== tagToRemove));
+  };
+
+  const finalizeDraftTag = () => {
+    if (tagDraft.trim()) {
+      addTag(tagDraft);
+      setTagDraft('');
+    }
+  };
+
+  const handleLevelChange = (value) => {
+    setSelectedStudyLevelId(value);
+    setFormData(prev => ({
+      ...prev,
+      study_sublevel_id: '',
+    }));
+    setError('');
+  };
+
+  const handleSublevelChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      study_sublevel_id: value,
     }));
     setError('');
   };
@@ -118,6 +176,12 @@ const UploadPage = () => {
     setError('');
     setUploadProgress(0);
 
+    // Ensure draft tag is captured before submit
+    const draft = normalizeTag(tagDraft);
+    const effectiveTags = draft
+      ? Array.from(new Map([...tags, draft].map((t) => [t.toLowerCase(), t])).values()).slice(0, 20)
+      : tags;
+
     // Validation
     if (!formData.title.trim()) {
       setError('Le titre est requis');
@@ -127,6 +191,18 @@ const UploadPage = () => {
 
     if (!formData.course_id) {
       setError('Veuillez sélectionner un domaine de cours');
+      setLoading(false);
+      return;
+    }
+
+    if (!selectedStudyLevelId) {
+      setError('Veuillez sélectionner le niveau d\'étude');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.study_sublevel_id) {
+      setError('Veuillez sélectionner le sous-niveau');
       setLoading(false);
       return;
     }
@@ -149,7 +225,10 @@ const UploadPage = () => {
         });
       }, 200);
 
-      const result = await documentsAPI.create(formData);
+      const result = await documentsAPI.create({
+        ...formData,
+        tags_input: effectiveTags.join(','),
+      });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -245,6 +324,50 @@ const UploadPage = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <div
+                className={`flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 ${
+                  loading ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 rounded-sm opacity-70 hover:opacity-100"
+                      aria-label={`Supprimer le tag ${tag}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  id="tags"
+                  value={tagDraft}
+                  onChange={(e) => setTagDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === ',' || e.key === 'Tab') {
+                      e.preventDefault();
+                      finalizeDraftTag();
+                    } else if (e.key === 'Backspace' && !tagDraft && tags.length) {
+                      // Remove last tag quickly
+                      removeTag(tags[tags.length - 1]);
+                    }
+                  }}
+                  onBlur={finalizeDraftTag}
+                  placeholder={tags.length ? 'Ajouter un tag…' : 'Ex: python puis espace'}
+                  className="min-w-[180px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  disabled={loading}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Tape un tag puis appuie sur espace (ou Entrée) pour l’ajouter.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="course_id">Domaine de cours *</Label>
               <Select
                 value={formData.course_id}
@@ -262,6 +385,50 @@ const UploadPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Niveau d'étude *</Label>
+                <Select
+                  value={selectedStudyLevelId}
+                  onValueChange={handleLevelChange}
+                  disabled={loading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un niveau" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {studyLevels.map((level) => (
+                      <SelectItem key={level.id} value={level.id.toString()}>
+                        {level.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Sous-niveau *</Label>
+                <Select
+                  value={formData.study_sublevel_id}
+                  onValueChange={handleSublevelChange}
+                  disabled={loading || !selectedStudyLevelId}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={selectedStudyLevelId ? "Choisir un sous-niveau" : "Choisir d'abord un niveau"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(studyLevels.find(l => l.id.toString() === selectedStudyLevelId)?.sublevels || []).map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id.toString()}>
+                        {sub.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -351,4 +518,3 @@ const UploadPage = () => {
 };
 
 export default UploadPage;
-

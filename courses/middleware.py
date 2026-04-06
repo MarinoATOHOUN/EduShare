@@ -1,4 +1,7 @@
 from .utils_tracking import record_user_activity
+import logging
+
+logger = logging.getLogger("courses.middleware")
 
 class UserActivityMiddleware:
     """Middleware to track user activity on every request"""
@@ -16,6 +19,6 @@ class UserActivityMiddleware:
                 record_user_activity(request.user, request)
             except Exception as e:
                 # Don't let tracking errors break the application
-                print(f"Error recording user activity: {e}")
+                logger.exception("Error recording user activity")
                 
         return response

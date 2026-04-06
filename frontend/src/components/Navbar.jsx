@@ -43,6 +43,12 @@ const Navbar = () => {
             >
               Parcourir les cours
             </Link>
+            <Link
+              to="/pricing"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Tarifs
+            </Link>
             {isAuthenticated && (
               <Link
                 to="/upload"
@@ -125,4 +131,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
