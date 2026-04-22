@@ -1,20 +1,25 @@
-import os
-import re
+# -*- coding: utf-8 -*-
+"""
+Document Chat — prompt building with BM25 RAG retrieval.
+Developed by Marino ATOHOUN.
+"""
 
-from django.utils import timezone
+import os
 
 from courses.models import PDFDocument, PDFDocumentText
 from courses.pdf_text import extract_pdf_pages
+from courses.rag_engine import Chunk, retrieve_relevant_chunks
 
 
-_WORD_RE = re.compile(r"[\\wÀ-ÿ]{3,}", re.UNICODE)
-
-
-def _tokenize(text: str) -> list[str]:
-    return [t.lower() for t in _WORD_RE.findall(text or "")]
-
+# ──────────────────────────────────────────────────────────────────────────────
+# PDF text cache
+# ──────────────────────────────────────────────────────────────────────────────
 
 def ensure_document_text_cache(document: PDFDocument) -> PDFDocumentText:
+    """
+    Return the cached PDFDocumentText for *document*, refreshing it if the
+    underlying file has changed (size or modification time).
+    """
     pdf_path = document.pdf_file.path
     file_size = os.path.getsize(pdf_path) if os.path.exists(pdf_path) else 0
     file_mtime = os.path.getmtime(pdf_path) if os.path.exists(pdf_path) else 0
@@ -32,58 +37,79 @@ def ensure_document_text_cache(document: PDFDocument) -> PDFDocumentText:
     return cache
 
 
-def pick_relevant_pages(pages: list[str], query: str, max_pages: int = 4) -> list[tuple[int, str]]:
+# ──────────────────────────────────────────────────────────────────────────────
+# Prompt builder
+# ──────────────────────────────────────────────────────────────────────────────
+
+def build_prompt(
+    document: PDFDocument,
+    question: str,
+    history: list[dict] | None = None,
+) -> tuple[list[dict], list[dict]]:
     """
-    Returns list of (page_number_1based, page_text) best matching the query.
+    Build the LLM messages list and return the source metadata.
+
+    Returns:
+        (messages, sources)
+
+        messages : list of OpenAI-style chat dicts to pass to groq_chat_completion
+        sources  : list of source dicts — [{"page": int, "excerpt": str, "chunk_id": int}, …]
+                   to be forwarded to the frontend for citation display.
     """
-    tokens = _tokenize(query)
-    if not tokens:
-        return [(1, pages[0])] if pages else []
-
-    token_set = set(tokens[:25])
-    scored: list[tuple[int, int]] = []
-    for idx, page in enumerate(pages):
-        pl = (page or "").lower()
-        score = 0
-        for t in token_set:
-            if t in pl:
-                score += 1
-        if score:
-            scored.append((idx, score))
-
-    if not scored:
-        # Fallback: first pages
-        return [(i + 1, pages[i]) for i in range(min(max_pages, len(pages)))]
-
-    scored.sort(key=lambda x: x[1], reverse=True)
-    chosen = [idx for idx, _ in scored[:max_pages]]
-    chosen.sort()
-    return [(i + 1, pages[i]) for i in chosen]
-
-
-def build_prompt(document: PDFDocument, question: str, history: list[dict] | None = None) -> list[dict]:
     cache = ensure_document_text_cache(document)
-    relevant = pick_relevant_pages(cache.pages or [], question, max_pages=4)
-    context = "\n\n".join([f"[Page {p}]\n{text}" for p, text in relevant])
+    pages: list[str] = cache.pages or []
 
+    # ── BM25 retrieval ────────────────────────────────────────────────────────
+    top_chunks: list[Chunk] = retrieve_relevant_chunks(pages, question)
+
+    # Build the context block injected into the user message
+    context_parts: list[str] = []
+    for chunk in top_chunks:
+        context_parts.append(f"[Page {chunk.page}]\n{chunk.text}")
+    context = "\n\n---\n\n".join(context_parts)
+
+    # Build the sources list for the UI
+    sources: list[dict] = [
+        {
+            "page": chunk.page,
+            "excerpt": chunk.excerpt,
+            "chunk_id": chunk.chunk_id,
+        }
+        for chunk in top_chunks
+    ]
+
+    # ── System prompt ─────────────────────────────────────────────────────────
     system = (
-        "Tu es un assistant pédagogique. Réponds en français.\n"
-        "Tu dois répondre uniquement à partir du CONTEXTE fourni (pages du PDF).\n"
-        "Si l'information n'est pas dans le contexte, dis-le clairement et propose des questions de clarification.\n"
-        "Donne des réponses précises et cite les pages comme (p. X).\n"
-        "Format: Markdown simple + LaTeX pour les maths ($...$ ou $$...$$).\n"
+        "Tu es un assistant pédagogique expert. Réponds UNIQUEMENT en français.\n\n"
+        "RÈGLES STRICTES :\n"
+        "1. Appuie-toi EXCLUSIVEMENT sur le CONTEXTE fourni (extraits de pages du PDF).\n"
+        "2. Si l'information est absente du contexte, dis-le clairement et propose une "
+        "reformulation de la question.\n"
+        "3. Cite systématiquement les pages sources sous la forme **(p. X)** après chaque "
+        "affirmation clé.\n"
+        "4. Si plusieurs pages traitent du sujet, cite toutes les pages concernées.\n"
+        "5. Formatte ta réponse en Markdown clair (titres ##, listes, gras **…**).\n"
+        "6. Pour les mathématiques, utilise LaTeX inline $…$ ou display $$…$$.\n"
+        "7. Termine par une section **Sources** listant les pages utilisées.\n"
     )
 
     messages: list[dict] = [{"role": "system", "content": system}]
+
+    # ── Conversation history (keep last 8 turns) ──────────────────────────────
     if history:
-        # Keep a short window
         for m in history[-8:]:
             role = m.get("role")
             content = m.get("content")
             if role in ("user", "assistant") and isinstance(content, str):
                 messages.append({"role": role, "content": content})
 
-    user_content = f"CONTEXTE:\n{context}\n\nQUESTION:\n{question}"
+    # ── User message with injected context ────────────────────────────────────
+    user_content = (
+        f"CONTEXTE (extraits du PDF \"{document.title}\") :\n\n"
+        f"{context}\n\n"
+        f"---\n\n"
+        f"QUESTION :\n{question}"
+    )
     messages.append({"role": "user", "content": user_content})
-    return messages
 
+    return messages, sources

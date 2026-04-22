@@ -10,10 +10,23 @@ from courses.utils import decrypt_id
 
 class DocumentChatView(APIView):
     """
-    Chat with a PDF document using Groq LLMs + model relay.
+    RAG-powered chat with a PDF document using Groq LLMs.
 
-    POST:
-      { "message": "...", "history": [{"role":"user|assistant","content":"..."}] }
+    POST body:
+      {
+        "message": "...",
+        "history": [{"role": "user|assistant", "content": "..."}, ...]
+      }
+
+    Response:
+      {
+        "answer": "...",        # Markdown-formatted LLM response
+        "model":  "...",        # Groq model used
+        "sources": [            # RAG source citations
+          { "page": 3, "excerpt": "...", "chunk_id": 12 },
+          ...
+        ]
+      }
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -24,6 +37,7 @@ class DocumentChatView(APIView):
         if not message:
             return Response({"detail": "Message requis."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Resolve encrypted or plain document ID
         resolved = document_id
         if not str(resolved).isdigit():
             decoded = decrypt_id(resolved)
@@ -39,7 +53,9 @@ class DocumentChatView(APIView):
         if not document:
             return Response({"detail": "Document non trouvé."}, status=status.HTTP_404_NOT_FOUND)
 
-        messages = build_prompt(document, message, history=history if isinstance(history, list) else None)
+        # Build RAG prompt — returns both the messages list AND source metadata
+        history_list = history if isinstance(history, list) else None
+        messages, sources = build_prompt(document, message, history=history_list)
 
         try:
             result = groq_chat_completion(messages)
@@ -64,5 +80,6 @@ class DocumentChatView(APIView):
             {
                 "answer": result["content"],
                 "model": result["model"],
+                "sources": sources,   # <-- new field: RAG citations
             }
         )

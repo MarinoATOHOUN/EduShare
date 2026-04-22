@@ -52,6 +52,124 @@ EduShare est une plateforme web complète de partage de documents PDF éducatifs
 - Ouverture en plein écran
 - Téléchargement direct
 
+## 🤖 Assistant IA — Système RAG (Retrieval-Augmented Generation)
+
+Le chatbot intégré au lecteur de document utilise un système **RAG maison** basé sur l'algorithme **BM25 (Okapi BM25)** — sans aucune dépendance externe (pas de `sentence-transformers`, pas de `faiss`, pas de `langchain`).
+
+### Comment ça fonctionne
+
+```
+Question utilisateur
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│  1. EXTRACTION  (pdf_text.py)                       │
+│     pdftotext → liste de pages texte                │
+│     Mise en cache DB (PDFDocumentText)              │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  2. CHUNKING  (rag_engine.py)                       │
+│     Découpage en paragraphes chevauchants           │
+│     ~180 mots/chunk | overlap 40 mots               │
+│     Chaque chunk porte son numéro de page           │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  3. RETRIEVAL BM25  (rag_engine.py)                 │
+│     Index BM25 construit à la volée                 │
+│     Score IDF × TF normalisé pour chaque chunk      │
+│     Top 5 chunks les plus pertinents sélectionnés   │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  4. PROMPT  (document_chat.py)                      │
+│     Contexte = chunks formatés [Page X]\n...        │
+│     Prompt système strict : citer les pages (p. X)  │
+│     Historique conversationnel (8 derniers tours)   │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  5. LLM  (groq_llm.py)                             │
+│     Appel Groq API (relay multi-modèles)            │
+│     Réponse Markdown + citations (p. X)             │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  6. RÉPONSE API  (chat_views.py)                    │
+│     { answer, model, sources: [{page, excerpt}] }   │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│  7. UI  (DocumentChat.jsx)                          │
+│     Rendu Markdown natif                            │
+│     Citations (p. X) mises en évidence              │
+│     Panneaux sources collapsibles par page          │
+└─────────────────────────────────────────────────────┘
+```
+
+### Fichiers impliqués
+
+| Fichier | Rôle |
+|---|---|
+| `courses/rag_engine.py` | Chunking BM25 — cœur du RAG (0 dépendance externe) |
+| `courses/pdf_text.py` | Extraction texte via `pdftotext` (page par page) |
+| `courses/document_chat.py` | Construction du prompt + métadonnées sources |
+| `courses/chat_views.py` | Endpoint POST `/documents/<id>/chat/` |
+| `courses/groq_llm.py` | Client Groq avec relay multi-modèles + load balancing |
+| `frontend/src/components/DocumentChat.jsx` | Interface chat avec sources citées |
+
+### Paramètres BM25 configurables (`rag_engine.py`)
+
+| Paramètre | Valeur | Description |
+|---|---|---|
+| `CHUNK_SIZE_WORDS` | 180 | Taille cible d'un chunk (en mots) |
+| `CHUNK_OVERLAP_WORDS` | 40 | Chevauchement entre chunks consécutifs |
+| `MAX_CHUNKS_RETURNED` | 5 | Nombre de chunks envoyés au LLM |
+| `EXCERPT_MAX_CHARS` | 220 | Longueur de l'extrait affiché dans l'UI |
+| `BM25_K1` | 1.5 | Saturation de fréquence (standard Okapi) |
+| `BM25_B` | 0.75 | Normalisation par longueur (standard Okapi) |
+
+### Endpoint Chat — Réponse API
+
+```
+POST /api/documents/<id>/chat/
+Authorization: Bearer <token>
+
+Body:
+{
+  "message": "Explique le théorème de Pythagore",
+  "history": [...]   // optionnel — 8 derniers tours max
+}
+
+Response:
+{
+  "answer": "Le théorème de Pythagore **(p. 3)** stipule que...",
+  "model": "llama-3.3-70b-versatile",
+  "sources": [
+    { "page": 3, "excerpt": "Le théorème de Pythagore...", "chunk_id": 12 },
+    { "page": 5, "excerpt": "Application en géométrie...", "chunk_id": 18 }
+  ]
+}
+```
+
+### Fonctionnalités de l'interface chat
+
+- **Markdown natif** — titres, listes, gras, italique, `code`
+- **Citations page** — les références `(p. X)` sont mises en évidence avec une icône 📖
+- **Panneaux sources** — chaque réponse IA affiche les pages utilisées, cliquables pour voir l'extrait exact du document
+- **Suggestions contextuelles** — questions prédéfinies affichées au démarrage
+- **Indicateur d'analyse** — spinner pendant la recherche dans le document
+- **Historique conversationnel** — les 8 derniers échanges sont envoyés pour le contexte
+
+---
+
 ## Structure du Projet
 
 ```
